@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using UnityEngine;
 
 namespace MalumMenu;
 
@@ -17,6 +18,8 @@ public struct CheatToggles
     public static bool killAllCrew;
     public static bool killAllImps;
     public static bool revive;
+    public static bool protectPlayer;
+    public static bool invertControls;
 
     //Roles
     public static bool changeRole;
@@ -44,6 +47,7 @@ public struct CheatToggles
     public static bool showPlayerInfo;
     public static bool seeDisguises;
     public static bool revealVotes;
+    public static bool moreLobbyInfo;
 
     //Camera
     public static bool spectate;
@@ -70,6 +74,7 @@ public struct CheatToggles
 
     //Ship
     public static bool closeMeeting;
+    public static bool sabotageMap;
     public static bool doorsSab;
     public static bool unfixableLights;
     public static bool commsSab;
@@ -105,6 +110,7 @@ public struct CheatToggles
     public static bool animCamsInUse;
 
     //Config
+    public static bool reloadConfig;
     public static bool RGBMode;
 
     public static void DisablePPMCheats(string variableToKeep)
@@ -115,10 +121,11 @@ public struct CheatToggles
         spectate = variableToKeep == "spectate" && spectate;
         changeRole = variableToKeep == "changeRole" && changeRole;
         teleportPlayer = variableToKeep == "teleportPlayer" && teleportPlayer;
+        protectPlayer = variableToKeep == "protectPlayer" && protectPlayer;
     }
 
     public static bool shouldPPMClose(){
-        return !changeRole && !reportBody && !telekillPlayer && !killPlayer && !spectate && !teleportPlayer;
+        return !changeRole && !reportBody && !telekillPlayer && !killPlayer && !spectate && !teleportPlayer && !protectPlayer;
     }
 
     /// <summary>
@@ -140,7 +147,7 @@ public struct CheatToggles
     /// Saves all cheat toggles to a file named "MalumProfile.txt" in the BepInEx config directory.
     /// Each line in the file contains a toggle name and its value in the format "ToggleName=true/false".
     /// </summary>
-    public static void SaveAllToFile()
+    public static void SaveTogglesToProfile()
     {
         var fields = typeof(CheatToggles).GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
         using var writer = new StreamWriter(Path.Combine(BepInEx.Paths.ConfigPath, "MalumProfile.txt"));
@@ -157,7 +164,7 @@ public struct CheatToggles
     /// Loads cheat toggles from a file named "MalumProfile.txt" in the BepInEx config directory.
     /// Each line in the file contains a toggle name and its value in the format "ToggleName=true/false".
     /// </summary>
-    public static void LoadAllFromFile()
+    public static void LoadTogglesFromProfile()
     {
         var fields = typeof(CheatToggles).GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
         var fieldDict = new Dictionary<string, System.Reflection.FieldInfo>();
@@ -179,6 +186,21 @@ public struct CheatToggles
             if (parts.Length == 2 && fieldDict.ContainsKey(parts[0]) && bool.TryParse(parts[1], out var value))
             {
                 fieldDict[parts[0]].SetValue(null, value);
+            }
+        }
+    }
+
+    public class KeybindListener : MonoBehaviour
+    {
+        public MalumMenu Plugin { get; internal set; }
+
+        public void Update()
+        {
+            if (reloadConfig)
+            {
+                Plugin.Config.Reload();
+                Plugin.Log.LogInfo("Plugin config reloaded.");
+                reloadConfig = false;
             }
         }
     }

@@ -15,6 +15,7 @@ using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
 
 namespace MalumMenu;
+
 public static class Utils
 {
     //Useful for getting full lists of all the Among Us cosmetics IDs
@@ -39,6 +40,39 @@ public static class Utils
     public static bool DleksIsActive => (MapNames)GameOptionsManager.Instance.CurrentGameOptions.MapId == MapNames.Dleks;
     public static bool AirshipIsActive => (MapNames)GameOptionsManager.Instance.CurrentGameOptions.MapId == MapNames.Airship;
     public static bool FungleIsActive => (MapNames)GameOptionsManager.Instance.CurrentGameOptions.MapId == MapNames.Fungle;
+
+    public const float DefaultSpeed = 2.5f;
+    public const float DefaultGhostSpeed = 3f;
+
+    /// <summary>
+    /// Check if LocalPlayer's speed is the default
+    /// </summary>
+    /// <param name="forGhost">Check ghost speed instead of normal speed</param>
+    /// <returns>True if speed is the default, false otherwise</returns>
+    public static bool isSpeedDefault(bool forGhost = false)
+    {
+        return forGhost ? Mathf.Approximately(PlayerControl.LocalPlayer.MyPhysics.GhostSpeed, DefaultGhostSpeed) :
+            Mathf.Approximately(PlayerControl.LocalPlayer.MyPhysics.Speed, DefaultSpeed);
+    }
+
+    /// <summary>
+    /// Snap LocalPlayer's speed to the default if within snapRange
+    /// </summary>
+    /// <param name="snapRange">The range within which to snap the speed</param>
+    /// <param name="forGhost">Snap ghost speed instead of normal speed</param>
+    public static void snapSpeedToDefault(float snapRange, bool forGhost = false)
+    {
+        if (forGhost)
+        {
+            PlayerControl.LocalPlayer.MyPhysics.GhostSpeed = Mathf.Abs(PlayerControl.LocalPlayer.MyPhysics.GhostSpeed - DefaultGhostSpeed)
+                                                             < snapRange ? DefaultGhostSpeed : PlayerControl.LocalPlayer.MyPhysics.GhostSpeed;
+        }
+        else
+        {
+            PlayerControl.LocalPlayer.MyPhysics.Speed = Mathf.Abs(PlayerControl.LocalPlayer.MyPhysics.Speed - DefaultSpeed)
+                                                        < snapRange ? DefaultSpeed : PlayerControl.LocalPlayer.MyPhysics.Speed;
+        }
+    }
 
     //Get ClientData by PlayerControl
     public static ClientData getClientByPlayer(PlayerControl player)
@@ -82,6 +116,20 @@ public static class Utils
         var fullRequirements = killAnyoneRequirements && !target.IsDead && !target.Object.inVent && !target.Object.inMovingPlat && target.Role.CanBeKilled;
 
         return CheatToggles.killAnyone ? killAnyoneRequirements : fullRequirements;
+    }
+
+    public static List<NetworkedPlayerInfo> GetAllPlayerData()
+    {
+        var playerDataList = new List<NetworkedPlayerInfo>();
+        foreach (var player in PlayerControl.AllPlayerControls)
+        {
+            if (player != null && player.Data != null)
+            {
+                playerDataList.Add(player.Data);
+            }
+        }
+
+        return playerDataList;
     }
 
     // Adjusts HUD resolution
@@ -300,6 +348,14 @@ public static class Utils
         return HudManager.Instance.roomTracker.LastRoom.RoomId;
     }
 
+    // Get a list of all rooms that have doors
+    public static System.Collections.Generic.List<SystemTypes> GetDoorRooms()
+    {
+        if (!isShip || ShipStatus.Instance.AllDoors.Count <= 0) return [];
+
+        return ShipStatus.Instance.AllDoors.Select(d => d.Room).Distinct().ToList();
+    }
+
     // Fancy colored ping text
     public static string getColoredPingText(int ping){
 
@@ -404,6 +460,8 @@ public static class Utils
         var level = playerInfo.PlayerLevel + 1;
         var platform = "Unknown";
         try { platform = PlatformTypeToString(player.PlatformData.Platform); } catch { }
+        //var puid = player.ProductUserId;
+        //var friendcode = player.FriendCode;
         var roleColor = ColorUtility.ToHtmlStringRGB(playerInfo.Role.TeamColor);
 
         var hostString = player == host ? "Host - " : "";
@@ -474,9 +532,10 @@ public static class Utils
 
     // Show custom popup ingame
     // Found here: https://github.com/NuclearPowered/Reactor/blob/6eb0bf19c30733b78532dada41db068b2b247742/Reactor/Networking/Patches/HttpPatches.cs
-    public static void showPopup(string text){
+    public static void showPopup(string text)
+    {
         var popup = Object.Instantiate(DiscordManager.Instance.discordPopup, Camera.main!.transform);
-        
+
         var background = popup.transform.Find("Background").GetComponent<SpriteRenderer>();
         var size = background.size;
         size.x *= 2.5f;
@@ -484,6 +543,11 @@ public static class Utils
 
         popup.TextAreaTMP.fontSizeMin = 2;
         popup.Show(text);
+    }
+
+    public static void ShowNewPopup(string text)
+    {
+        DestroyableSingleton<DisconnectPopup>.Instance.ShowCustom(text);
     }
 
     // Load sprites and textures from manifest resources

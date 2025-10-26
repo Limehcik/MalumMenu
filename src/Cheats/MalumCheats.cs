@@ -168,12 +168,13 @@ public static class MalumCheats
         byte currentMapID = Utils.getCurrentMapID();
 
         // Handle all sabotage systems
-        MalumSabotageSystem.handleReactor(shipStatus, currentMapID);
-        MalumSabotageSystem.handleOxygen(shipStatus, currentMapID);
-        MalumSabotageSystem.handleComms(shipStatus, currentMapID);
-        MalumSabotageSystem.handleElectrical(shipStatus, currentMapID);
-        MalumSabotageSystem.handleMushMix(shipStatus, currentMapID);
-        MalumSabotageSystem.handleDoors(shipStatus);
+        MalumSabotageSystem.HandleReactor(shipStatus, currentMapID);
+        MalumSabotageSystem.HandleOxygen(shipStatus, currentMapID);
+        MalumSabotageSystem.HandleComms(shipStatus, currentMapID);
+        MalumSabotageSystem.HandleElectrical(shipStatus, currentMapID);
+        MalumSabotageSystem.HandleMushMix(shipStatus, currentMapID);
+        MalumSabotageSystem.HandleDoors(shipStatus);
+        MalumSabotageSystem.OpenSabotageMap();
     }
 
     public static void walkInVentCheat()
@@ -298,8 +299,6 @@ public static class MalumCheats
 
     public static void speedBoostCheat()
     {
-        const float defaultSpeed = 2.5f;
-        const float defaultGhostSpeed = 3f;
         const float speedMultiplier = 2.0f;
 
         try
@@ -307,17 +306,16 @@ public static class MalumCheats
             // If the speedBoost cheat is enabled, the default speed is multiplied by the speed multiplier
             // Otherwise the default speed is used by itself
 
-            float newSpeed = CheatToggles.speedBoost ? defaultSpeed * speedMultiplier : defaultSpeed;
+            var newSpeed = CheatToggles.speedBoost ? Utils.DefaultSpeed * speedMultiplier : Utils.DefaultSpeed;
 
-            float newGhostSpeed = CheatToggles.speedBoost ? defaultGhostSpeed * speedMultiplier : defaultGhostSpeed;
+            var newGhostSpeed = CheatToggles.speedBoost ? Utils.DefaultGhostSpeed * speedMultiplier : Utils.DefaultGhostSpeed;
 
             PlayerControl.LocalPlayer.MyPhysics.Speed = newSpeed;
             PlayerControl.LocalPlayer.MyPhysics.GhostSpeed = newGhostSpeed;
-        }
-        catch{}
+        }catch{}
     }
 
-    public static void reviveCheat()
+    public static void ReviveCheat()
     {
         if (!CheatToggles.revive) return;
 
@@ -329,7 +327,7 @@ public static class MalumCheats
 
     private static void ForceSetScanner(PlayerControl player, bool toggle)
     {
-        byte count = ++player.scannerCount;
+        var count = ++player.scannerCount;
         player.SetScanner(toggle, count);
         RpcSetScannerMessage rpcMessage = new(player.NetId, toggle, count);
         AmongUsClient.Instance.LateBroadcastReliableMessage(Unsafe.As<IGameDataMessage>(rpcMessage));
@@ -363,25 +361,44 @@ public static class MalumCheats
 
     public static void AnimationCheat()
     {
+        var map = (MapNames)Utils.getCurrentMapID();
+
         if (CheatToggles.animShields)
         {
-            ForcePlayAnimation((byte)TaskTypes.PrimeShields);
+            if (map is MapNames.Skeld or MapNames.Dleks)
+            {
+                ForcePlayAnimation((byte)TaskTypes.PrimeShields);
+            }
             CheatToggles.animShields = false;
         }
-        else if (CheatToggles.animAsteroids)
+        if (CheatToggles.animAsteroids)
         {
-            ForcePlayAnimation((byte)TaskTypes.ClearAsteroids);
+            if (map is MapNames.Skeld or MapNames.Dleks or MapNames.Polus)
+            {
+                ForcePlayAnimation((byte)TaskTypes.ClearAsteroids);
+            }
+            else
+            {
+                CheatToggles.animAsteroids = false;
+            }
         }
-        else if (CheatToggles.animEmptyGarbage)
+        if (CheatToggles.animEmptyGarbage)
         {
-            ForcePlayAnimation((byte)TaskTypes.EmptyGarbage);
+            if (map is MapNames.Skeld or MapNames.Dleks)
+            {
+                ForcePlayAnimation((byte)TaskTypes.EmptyGarbage);
+            }
             CheatToggles.animEmptyGarbage = false;
         }
 
         if (CheatToggles.animCamsInUse && !_hasUsedCamsCheatBefore)
         {
             // There is no cameras on Mira HQ and Fungle
-            if (!(Utils.MiraHQIsActive || Utils.FungleIsActive))
+            if (map is MapNames.MiraHQ or MapNames.Fungle)
+            {
+                CheatToggles.animCamsInUse = false;
+            }
+            else
             {
                 // ShipStatus.Instance.UpdateSystem(SystemTypes.Security, PlayerControl.LocalPlayer, (byte)(CheatToggles.animCamsInUse ? 1 : 0));
                 ShipStatus.Instance.RpcUpdateSystem(SystemTypes.Security, 1);

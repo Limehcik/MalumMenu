@@ -9,7 +9,7 @@ public static class MeetingHud_Update
 {
     public static List<int> votedPlayers = new List<int>();
 
-    // Prefix patch of MeetingHud.Update to constantly bloop new vote icons for 
+    // Prefix patch of MeetingHud.Update to constantly bloop new vote icons for
     // each new vote being cast during the meeting
     public static void Prefix(MeetingHud __instance)
     {
@@ -51,6 +51,7 @@ public static class MeetingHud_Update
                 }
             }
 
+            // This is required to see who skipped the voting
             if (__instance.SkippedVoting)
             {
                 __instance.SkippedVoting.SetActive(CheatToggles.revealVotes);

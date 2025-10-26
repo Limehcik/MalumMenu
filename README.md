@@ -36,6 +36,7 @@ For the lack of a better name, I call it **Astralum**.
 
 | Mod Version | Among Us - Version | Link                                  |
 |-------------|--------------------|---------------------------------------|
+| v2.6.1      | 2025.9.9 (17.0.0)  | [Download](../../releases/tag/v2.6.1) |
 | v2.5.3      | 2025.9.9 (17.0.0)  | [Download](../../releases/tag/v2.5.3) |
 | v2.5.2      | 2025.6.10 (16.1.0) | [Download](../../releases/tag/v2.5.2) |
 | v2.5.1      | 2025.6.10 (16.1.0) | [Download](../../releases/tag/v2.5.1) |
@@ -64,6 +65,7 @@ Changes from the original MalumMenu:
 - Fix killing as impostor kicking you from the lobby
 - Fix detecting if the player is the lobby host
 - Fix not being able to input russian characters (and possibly others) in chat
+- Fix and enable previously implemented but disabled Telekill cheat
 
 #### Additions
 - Added option to disable passives cheats (basically [this PR](https://github.com/scp222thj/MalumMenu/pull/164))
@@ -73,9 +75,16 @@ Changes from the original MalumMenu:
 - Added new "Animations" category
 - Added "Panic (Disable MalumMenu)" button (Passive category)
 - Added "Show Player Info" (ESP category)
-- Added "Save settings to file" and "Load settings from file" buttons (Config category)
+- Added "Reload plugin config", "Save to Profile" and "Load from Profile" buttons (Config category)
 - Added new Viper and Detective roles to "Set Fake Role" cheat (Roles category)
 - Added "Spoof Date to April 1st" (Passive category)
+- Added "Protect Player" PPM (Host-Only category)
+- Added "More Lobby Info" (ESP category)
+- Added "Open Sabotage Map" (Ship category)
+- Added a new horizontal tab-based UI config option
+- Added "Doors" submenu to close doors of each room individually (Ship category)
+- Changed "SpeedHack" to be a slider instead of a toggle (Player category)
+- Added "Invert Controls" (Player category)
 
 #### Other changes
 - Some refactoring and code style changes

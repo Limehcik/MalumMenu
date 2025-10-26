@@ -1,4 +1,5 @@
 using Il2CppSystem.Collections.Generic;
+using BepInEx.Unity.IL2CPP.Utils;
 using System;
 using AmongUs.GameOptions;
 using UnityEngine;
@@ -10,10 +11,9 @@ public static class MalumPPMCheats
     public static bool killPlayerActive;
     public static bool spectateActive;
     public static bool teleportPlayerActive;
+    public static bool protectPlayerActive;
     public static bool reportBodyActive;
     public static bool changeRoleActive;
-    public static float teleKillWaitFrames = -1;
-    public static Vector2 teleKillPosition;
     public static RoleTypes? oldRole = null;
 
     public static void reportBodyPPM(){
@@ -27,19 +27,12 @@ public static class MalumPPMCheats
                     CheatToggles.DisablePPMCheats("reportBody");
                 }
 
-                List<NetworkedPlayerInfo> playerDataList = new List<NetworkedPlayerInfo>();
-
-                // All players are saved to playerList
-                foreach (var player in PlayerControl.AllPlayerControls){
-                    playerDataList.Add(player.Data);
-                }
-
                 // Player pick menu to choose any body (alive or dead) and report it
-                PlayerPickMenu.openPlayerPickMenu(playerDataList, (Action) (() =>
+                PlayerPickMenu.openPlayerPickMenu(Utils.GetAllPlayerData(), (Action) (() =>
                 {
-                    
+
                     Utils.reportDeadBody(PlayerPickMenu.targetPlayerData);
-            
+
                 }));
 
                 reportBodyActive = true;
@@ -76,16 +69,8 @@ public static class MalumPPMCheats
                     return;
                 }
 
-                List<NetworkedPlayerInfo> playerDataList = new List<NetworkedPlayerInfo>();
-
-                // All players are saved to playerList
-                foreach (var player in PlayerControl.AllPlayerControls)
-                {
-                    playerDataList.Add(player.Data);
-                }
-
                 // Player pick menu made for killing any player by sending a successful MurderPlayer RPC call
-                PlayerPickMenu.openPlayerPickMenu(playerDataList, (Action)(() =>
+                PlayerPickMenu.openPlayerPickMenu(Utils.GetAllPlayerData(), (Action)(() =>
                 {
                     Utils.murderPlayer(PlayerPickMenu.targetPlayerData.Object, MurderResultFlags.Succeeded);
                 }));
@@ -123,20 +108,12 @@ public static class MalumPPMCheats
                     return;
                 }
 
-                List<NetworkedPlayerInfo> playerDataList = new List<NetworkedPlayerInfo>();
-
-                // All players are saved to playerList
-                foreach (var player in PlayerControl.AllPlayerControls)
-                {
-                    playerDataList.Add(player.Data);
-                }
-
                 // Player pick menu made for killing any player by sending a successful MurderPlayer RPC call
-                PlayerPickMenu.openPlayerPickMenu(playerDataList, (Action)(() =>
+                PlayerPickMenu.openPlayerPickMenu(Utils.GetAllPlayerData(), (Action)(() =>
                 {
-                    teleKillPosition = PlayerControl.LocalPlayer.GetTruePosition();
+                    var oldPos = PlayerControl.LocalPlayer.GetTruePosition();
                     Utils.murderPlayer(PlayerPickMenu.targetPlayerData.Object, MurderResultFlags.Succeeded);
-                    teleKillWaitFrames = 40;
+                    AmongUsClient.Instance.StartCoroutine(DelayedTeleportBack(oldPos));
                 }));
 
                 telekillPlayerActive = true;
@@ -151,6 +128,17 @@ public static class MalumPPMCheats
         {
             telekillPlayerActive = false;
         }
+    }
+
+    /// <summary>
+    /// Coroutine to teleport the LocalPlayer back to their original position after a short delay.
+    /// </summary>
+    /// <param name="position">The position to teleport back to.</param>
+    /// <returns>An IEnumerator for the coroutine.</returns>
+    public static System.Collections.IEnumerator DelayedTeleportBack(Vector2 position)
+    {
+        yield return new WaitForSeconds(0.15f);
+        PlayerControl.LocalPlayer.NetTransform.SnapTo(position);
     }
 
     public static void teleportPlayerPPM()
@@ -193,6 +181,42 @@ public static class MalumPPMCheats
         else if (teleportPlayerActive)
         {
             teleportPlayerActive = false;
+        }
+    }
+
+    public static void ProtectPlayerPPM()
+    {
+        if (CheatToggles.protectPlayer)
+        {
+            if (!protectPlayerActive && !Utils.isLobby)
+            {
+                if (PlayerPickMenu.playerpickMenu != null)
+                {
+                    PlayerPickMenu.playerpickMenu.Close();
+                    CheatToggles.DisablePPMCheats("protectPlayer");
+                }
+
+                PlayerPickMenu.openPlayerPickMenu(Utils.GetAllPlayerData(), (Action)(() =>
+                {
+                    var targetPlayer = PlayerPickMenu.targetPlayerData.Object;
+                    if (targetPlayer != null)
+                    {
+                        int protectColorId = PlayerControl.LocalPlayer.cosmetics.ColorId;
+                        PlayerControl.LocalPlayer.RpcProtectPlayer(targetPlayer, protectColorId);
+                    }
+                }));
+
+                protectPlayerActive = true;
+            }
+
+            if (PlayerPickMenu.playerpickMenu == null)
+            {
+                CheatToggles.protectPlayer = false;
+            }
+        }
+        else if (protectPlayerActive)
+        {
+            protectPlayerActive = false;
         }
     }
 
@@ -269,7 +293,7 @@ public static class MalumPPMCheats
 
                     // Custom PPM choice for Impostor role
                     playerDataList.Add(PlayerPickMenu.customPPMChoice("Impostor", impostorOutfit, Utils.getBehaviourByRoleType(RoleTypes.Impostor)));
-                
+
                 }
 
                 NetworkedPlayerInfo.PlayerOutfit trackerOutfit = new NetworkedPlayerInfo.PlayerOutfit
@@ -348,22 +372,22 @@ public static class MalumPPMCheats
                         /* if (PlayerPickMenu.targetPlayerData.Role.Role == RoleTypes.Shapeshifter && oldRole != RoleTypes.Shapeshifter){
 
                             Utils.showPopup("\n<size=125%>Changing into the Shapeshifter role is not recommended\nsince shapeshifting will get you kicked by the anticheat");
-                        
+
                         } else if (PlayerPickMenu.targetPlayerData.Role.Role == RoleTypes.Noisemaker && oldRole != RoleTypes.Noisemaker){
-                            
+
                             Utils.showPopup("\n<size=125%>Changing into the Noisemaker role is not recommended\nsince dying won't trigger the alert for other players");
-                        
+
                         } else if (oldRole == RoleTypes.Noisemaker){
-                            
+
                             Utils.showPopup("\n<size=125%>Your \"real\" role is still Noisemaker\nso other players will still see the alert when you die");
-                        
+
                         } */
-                        
+
                         RoleManager.Instance.SetRole(PlayerControl.LocalPlayer, PlayerPickMenu.targetPlayerData.Role.Role);
                     }
 
-                    
-                
+
+
                 }));
 
                 changeRoleActive = true;
